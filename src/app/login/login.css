@@ -1,0 +1,586 @@
+/* ═══════════════════════════════════════════════════════
+   PPSU Research Incentive Portal — Login Page Styles
+   BrightNest-Inspired Two-Column Split Layout
+   ═══════════════════════════════════════════════════════ */
+
+/* ─── Page Shell ─── */
+.login-page {
+  display: flex;
+  height: 100vh;
+  height: 100dvh;
+  width: 100vw;
+  font-family: var(--font-sans);
+  background: #ffffff;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+/* Override body and html backgrounds when login page is present */
+body:has(.login-page),
+html:has(.login-page) {
+  background: #ffffff !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* ═══════════ LEFT PANEL ═══════════ */
+.login-left {
+  position: relative;
+  display: none;
+  width: 70%;
+  flex-shrink: 0;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 48px 56px;
+  overflow: hidden;
+  background: #0f172a; /* Dark fallback while images load */
+}
+
+@media (min-width: 1024px) {
+  .login-left {
+    display: flex;
+  }
+}
+
+/* Slideshow Container */
+.login-left__slideshow {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  overflow: hidden;
+}
+
+/* Individual Slide */
+.login-left__slide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  opacity: 0;
+  transition: opacity 1.4s ease-in-out;
+  will-change: opacity;
+}
+
+.login-left__slide--active {
+  opacity: 1;
+}
+
+/* Subtle Readability Overlay */
+.login-left__overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.3) 0%,
+    rgba(15, 23, 42, 0.15) 35%,
+    rgba(15, 23, 42, 0.3) 65%,
+    rgba(15, 23, 42, 0.85) 100%
+  );
+  pointer-events: none;
+}
+
+/* Bottom-left text */
+.login-left__footer {
+  position: relative;
+  z-index: 2;
+  max-width: 520px;
+  margin-top: auto;
+}
+
+.login-left__subtitle {
+  display: inline-block;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 12px;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+.login-left__heading {
+  font-family: var(--font-heading), "Playfair Display", Georgia, serif;
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1.12;
+  color: #ffffff;
+  letter-spacing: -0.03em;
+  margin: 0;
+  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.7);
+}
+
+/* ═══════════ RIGHT PANEL (LIQUID THEME) ═══════════ */
+.login-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 40px 24px;
+  background: #f8fafc;
+  position: relative;
+  overflow-y: auto;
+}
+
+@media (min-width: 640px) {
+  .login-right {
+    padding: 48px 36px;
+  }
+}
+
+/* Liquid Ambient Background Glowing Orbs */
+.login-liquid-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.liquid-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.45;
+  animation: liquidFloat 14s infinite ease-in-out alternate;
+}
+
+.liquid-orb--1 {
+  top: -10%;
+  right: -10%;
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, rgba(185, 28, 28, 0.22) 0%, rgba(225, 29, 72, 0.04) 70%);
+}
+
+.liquid-orb--2 {
+  bottom: -15%;
+  left: -10%;
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, rgba(217, 119, 6, 0.18) 0%, rgba(245, 158, 11, 0.02) 70%);
+  animation-delay: -5s;
+}
+
+.liquid-orb--3 {
+  top: 45%;
+  left: 20%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(225, 29, 72, 0.12) 0%, rgba(244, 63, 94, 0.02) 70%);
+  animation-delay: -9s;
+}
+
+@keyframes liquidFloat {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(30px, 35px) scale(1.08); }
+  100% { transform: translate(-20px, -20px) scale(0.95); }
+}
+
+/* Content Wrapper (Centered Vertically and Horizontally) */
+.login-right__wrapper {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 450px;
+  margin: auto 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Outside PPSU Logo */
+.login-logo-outside {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 64px;
+  width: 100%;
+}
+
+.login-logo-outside__img {
+  height: 62px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.05));
+}
+
+/* Liquid Glass Card Container */
+.login-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 24px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 
+    0 25px 50px -12px rgba(15, 23, 42, 0.09),
+    0 0 0 1px rgba(255, 255, 255, 0.8) inset,
+    0 10px 25px -5px rgba(0, 0, 0, 0.03);
+  padding: 36px 36px 40px;
+  animation: cardFadeIn 0.5s ease-out forwards;
+}
+
+@keyframes cardFadeIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: 24px 20px 28px;
+    border-radius: 20px;
+  }
+}
+
+/* Tab Navigation (LOGIN | SIGN UP) */
+.login-card__tabs {
+  display: flex;
+  position: relative;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 28px;
+}
+
+.login-card__tab {
+  position: relative;
+  flex: 1;
+  padding: 12px 16px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.login-card__tab:hover {
+  color: #475569;
+}
+
+.login-card__tab--active {
+  color: #b91c1c;
+}
+
+.login-card__tab-line {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #b91c1c;
+  border-radius: 3px 3px 0 0;
+  box-shadow: 0 2px 6px rgba(185, 28, 28, 0.35);
+}
+
+/* Header Title & Subtitle */
+.login-card__header {
+  margin-bottom: 24px;
+}
+
+.login-card__title {
+  font-family: var(--font-sans);
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  margin: 0 0 6px 0;
+}
+
+.login-card__subtitle {
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  color: #64748b;
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* Error Alert */
+.login-card__error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 20px;
+  animation: fade-in 0.3s ease forwards;
+}
+
+.login-card__error-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* Form Layout */
+.login-card__form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.login-field__label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.login-field__label {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.login-field__asterisk {
+  color: #b91c1c;
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+.login-field__forgot {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: #b91c1c;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.15s ease;
+}
+
+.login-field__forgot:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.login-field__input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.login-field__icon {
+  position: absolute;
+  left: 16px;
+  width: 18px;
+  height: 18px;
+  color: #94a3b8;
+  pointer-events: none;
+  transition: color 0.2s ease;
+}
+
+.login-field__input {
+  width: 100%;
+  height: 48px;
+  padding-left: 48px;
+  padding-right: 16px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: #0f172a;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  outline: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) inset;
+}
+
+.login-field__input--has-eye {
+  padding-right: 48px;
+}
+
+.login-field__input::placeholder {
+  color: #94a3b8;
+}
+
+.login-field__input-wrap:focus-within .login-field__icon {
+  color: #b91c1c;
+}
+
+.login-field__input:focus {
+  border-color: #b91c1c;
+  box-shadow: 0 0 0 3.5px rgba(185, 28, 28, 0.12);
+  background: #ffffff;
+}
+
+.login-field__input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-field__eye {
+  position: absolute;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.15s ease;
+}
+
+.login-field__eye:hover {
+  color: #0f172a;
+}
+
+/* Remember Me Checkbox */
+.login-field__remember {
+  margin-top: -2px;
+  margin-bottom: 2px;
+}
+
+.login-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.login-checkbox__input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.login-checkbox__box {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.login-checkbox__input:checked + .login-checkbox__box {
+  background: #0284c7;
+  border-color: #0284c7;
+}
+
+.login-checkbox__input:checked + .login-checkbox__box::after {
+  content: "";
+  width: 5px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+
+.login-checkbox__label {
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #475569;
+}
+
+/* Liquid Red Submit Button */
+.login-btn-liquid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 50px;
+  margin-top: 6px;
+  padding: 0 24px;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  background: #b91c1c;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(185, 28, 28, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+.login-btn-liquid:hover:not(:disabled) {
+  background: #991b1b;
+  box-shadow: 0 6px 20px rgba(185, 28, 28, 0.45);
+  transform: translateY(-1px);
+}
+
+.login-btn-liquid:active:not(:disabled) {
+  transform: translateY(0) scale(0.99);
+}
+
+.login-btn-liquid:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.login-btn-liquid__icon {
+  width: 18px;
+  height: 18px;
+}
+
+.login-btn-liquid__spinner {
+  width: 18px;
+  height: 18px;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Bottom Institutional Note */
+.login-right__institutional {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+  margin-top: 20px;
+  letter-spacing: 0.02em;
+}
+
