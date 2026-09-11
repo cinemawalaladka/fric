@@ -126,45 +126,73 @@ export function StepCommonPublicationForm({
             </RadioGroup>
           </div>
 
-          {/* Title Fields (Single for Book, separated for others) */}
+          {/* Title Fields (2-column layout for Book, separated for others) */}
           {isBook ? (
-            <div className="space-y-2">
-              <Label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-                Title of Publish *
-              </Label>
-              <Input
-                placeholder="e.g. Advanced Quantum Computing Principles"
-                value={details.paperTitle || details.workTitle || details.title || ""}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  onUpdate("paperTitle", val);
-                  onUpdate("workTitle", val);
-                  onUpdate("title", val);
-                  onUpdate("publisher", val);
-                }}
-                className="bg-slate-50/50 border-slate-300 focus:bg-white"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Title of Publish */}
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                  Title of Publish *
+                </Label>
+                <Input
+                  placeholder="e.g. Advanced Quantum Computing Principles"
+                  value={details.paperTitle || details.workTitle || details.title || ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    onUpdate("paperTitle", val);
+                    onUpdate("workTitle", val);
+                    onUpdate("title", val);
+                  }}
+                  className="bg-slate-50/50 border-slate-300 focus:bg-white"
+                />
+              </div>
+
+              {/* Name of Publisher */}
+              <div className="space-y-2">
+                <Label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                  Name of Publisher *
+                </Label>
+                <Input
+                  placeholder="e.g. Springer Nature / Oxford University Press / Elsevier"
+                  value={details.publisher || details.publisherName || ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    onUpdate("publisher", val);
+                    onUpdate("publisherName", val);
+                  }}
+                  className="bg-slate-50/50 border-slate-300 focus:bg-white"
+                />
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Title of Journal / Publisher / Publication Container */}
               <div className="space-y-2">
                 <Label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-                  {isPaper ? "Title of Journal *" : isPatent ? "Patent Authority / Journal Name *" : isChapter ? "Title of Book *" : "Title of Journal / Book / Publisher *"}
+                  {isPaper ? "Title of Journal *" : isPatent ? "Patent Authority *" : isChapter ? "Title of Book *" : "Title of Journal / Book / Publisher *"}
                 </Label>
                 <Input
                   placeholder={
                     isPatent
-                      ? "e.g. Indian Patent Journal / Official Gazette"
+                      ? "e.g. Indian Patent Office (IPO) / Official Gazette"
                       : isChapter
                       ? "e.g. Handbook of Cloud Computing / Springer Nature"
                       : "e.g. IEEE Transactions on Pattern Analysis"
                   }
-                  value={details.journalTitle || details.journalName || details.bookTitle || ""}
+                  value={
+                    isPatent
+                      ? details.patentAuthority || details.patentOffice || details.journalTitle || details.journalName || ""
+                      : details.journalTitle || details.journalName || details.bookTitle || ""
+                  }
                   onChange={(e) => {
-                    onUpdate("journalTitle", e.target.value);
-                    onUpdate("journalName", e.target.value);
-                    if (isChapter) onUpdate("bookTitle", e.target.value);
+                    const val = e.target.value;
+                    onUpdate("journalTitle", val);
+                    onUpdate("journalName", val);
+                    if (isPatent) {
+                      onUpdate("patentAuthority", val);
+                      onUpdate("patentOffice", val);
+                    }
+                    if (isChapter) onUpdate("bookTitle", val);
                   }}
                   className="bg-slate-50/50 border-slate-300 focus:bg-white"
                 />

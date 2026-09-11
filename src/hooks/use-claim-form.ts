@@ -170,6 +170,13 @@ export function useClaimForm(initialClaimData?: any) {
       }));
     }
 
+    const pubObj = Array.isArray(initialClaimData.publications) ? initialClaimData.publications[0] : (initialClaimData.publications || {});
+    const bookObj = Array.isArray(initialClaimData.books) ? initialClaimData.books[0] : (initialClaimData.books || {});
+    const chapterObj = Array.isArray(initialClaimData.book_chapters) ? initialClaimData.book_chapters[0] : (initialClaimData.book_chapters || {});
+    const patentObj = Array.isArray(initialClaimData.patents) ? initialClaimData.patents[0] : (initialClaimData.patents || {});
+    const citationObj = Array.isArray(initialClaimData.citations) ? initialClaimData.citations[0] : (initialClaimData.citations || {});
+    const projectObj = Array.isArray(initialClaimData.research_projects) ? initialClaimData.research_projects[0] : (initialClaimData.research_projects || {});
+
     setState((s) => ({
       ...s,
       claimType: formTypeId,
@@ -177,39 +184,42 @@ export function useClaimForm(initialClaimData?: any) {
       authorshipPosition: initialPosition,
       authorNumber: initialAuthorNumber,
       details: {
-        ...(initialClaimData.publications?.[0] || {}),
-        ...(initialClaimData.books?.[0] || {}),
-        ...(initialClaimData.patents?.[0] || {}),
-        ...(initialClaimData.citations?.[0] || {}),
-        ...(initialClaimData.research_projects?.[0] || {}),
-        paperTitle: initialClaimData.publications?.[0]?.work_title || initialClaimData.publications?.[0]?.title || initialClaimData.books?.[0]?.title || "",
-        journalTitle: initialClaimData.publications?.[0]?.journal_name || initialClaimData.publications?.[0]?.title || initialClaimData.books?.[0]?.publisher || "",
-        workTitle: initialClaimData.publications?.[0]?.work_title || initialClaimData.books?.[0]?.work_title || initialClaimData.books?.[0]?.title || initialClaimData.patents?.[0]?.title || "",
-        title: initialClaimData.publications?.[0]?.title || initialClaimData.books?.[0]?.title || "",
-        recognizedBody: initialClaimData.publications?.[0]?.recognized_body || initialClaimData.books?.[0]?.recognized_body || initialClaimData.citations?.[0]?.citation_database || "Scopus",
-        otherRecognizedBody: initialClaimData.publications?.[0]?.other_recognized_body || initialClaimData.books?.[0]?.other_recognized_body,
-        publicationLevel: initialClaimData.publications?.[0]?.publication_level || initialClaimData.books?.[0]?.publication_level || initialClaimData.patents?.[0]?.publication_level || "International",
-        publicationDate: initialClaimData.publications?.[0]?.publication_date || initialClaimData.books?.[0]?.publication_date || initialClaimData.patents?.[0]?.publication_date || "",
-        webLink: initialClaimData.books?.[0]?.web_link || initialClaimData.book_chapters?.[0]?.web_link || "",
-        impactFactor: initialClaimData.publications?.[0]?.impact_factor ?? "",
-        acceptanceRate: initialClaimData.publications?.[0]?.acceptance_rate ?? "",
-        abdcCategory: initialClaimData.publications?.[0]?.abdc_category || "None",
-        doi: initialClaimData.publications?.[0]?.doi || initialClaimData.book_chapters?.[0]?.doi || initialClaimData.books?.[0]?.doi || "",
-        country: initialClaimData.patents?.[0]?.country || "",
-        countryName: initialClaimData.patents?.[0]?.country || "",
-        patentStatus: initialClaimData.patents?.[0]?.patent_status || "Granted",
-        patentType: initialClaimData.patents?.[0]?.patent_type || "Utility",
-        patentOffice: initialClaimData.patents?.[0]?.patent_office || "Indian Patent Office",
-        patentNumber: initialClaimData.patents?.[0]?.patent_number || "",
-        chapterPages: initialClaimData.books?.[0]?.chapter_pages || initialClaimData.book_chapters?.[0]?.chapter_pages || "",
-        chapterTitle: initialClaimData.books?.[0]?.chapter_title || initialClaimData.book_chapters?.[0]?.chapter_title || "",
-        bookTitle: initialClaimData.books?.[0]?.title || initialClaimData.book_chapters?.[0]?.book_title || "",
-        scopusId: initialClaimData.citations?.[0]?.scopus_id || "",
-        totalCitationsLastYear: initialClaimData.citations?.[0]?.total_citations_last_calendar_year ?? "",
-        ppsuCitationsLastYear: initialClaimData.citations?.[0]?.total_ppsu_citations_last_calendar_year ?? "",
-        depositedAmount: initialClaimData.research_projects?.[0]?.amount_deposited_in_ppsu ?? "",
-        depositDate: initialClaimData.research_projects?.[0]?.deposit_date || "",
-        depositProofUrl: initialClaimData.research_projects?.[0]?.deposit_proof_url || "",
+        ...pubObj,
+        ...bookObj,
+        ...chapterObj,
+        ...patentObj,
+        ...citationObj,
+        ...projectObj,
+        paperTitle: pubObj?.work_title || pubObj?.title || bookObj?.title || "",
+        journalTitle: pubObj?.journal_name || pubObj?.title || bookObj?.publisher || "",
+        workTitle: pubObj?.work_title || bookObj?.work_title || bookObj?.title || patentObj?.title || "",
+        title: pubObj?.title || bookObj?.title || "",
+        publisher: bookObj?.publisher || chapterObj?.publisher || pubObj?.journal_name || "",
+        publisherName: bookObj?.publisher || chapterObj?.publisher || "",
+        recognizedBody: pubObj?.recognized_body || bookObj?.recognized_body || citationObj?.citation_database || "Scopus",
+        otherRecognizedBody: pubObj?.other_recognized_body || bookObj?.other_recognized_body,
+        publicationLevel: pubObj?.publication_level || bookObj?.publication_level || patentObj?.publication_level || "International",
+        publicationDate: pubObj?.publication_date || bookObj?.publication_date || patentObj?.publication_date || "",
+        webLink: bookObj?.web_link || chapterObj?.web_link || "",
+        impactFactor: pubObj?.impact_factor ?? "",
+        acceptanceRate: pubObj?.acceptance_rate ?? "",
+        abdcCategory: pubObj?.abdc_category || "None",
+        doi: pubObj?.doi || chapterObj?.doi || bookObj?.doi || "",
+        country: patentObj?.country || "",
+        countryName: patentObj?.country || "",
+        patentStatus: patentObj?.patent_status || "Granted",
+        patentType: patentObj?.patent_type || "Utility",
+        patentOffice: patentObj?.patent_office || "Indian Patent Office",
+        patentNumber: patentObj?.patent_number || "",
+        chapterPages: bookObj?.chapter_pages || chapterObj?.chapter_pages || "",
+        chapterTitle: bookObj?.chapter_title || chapterObj?.chapter_title || "",
+        bookTitle: bookObj?.title || chapterObj?.book_title || "",
+        scopusId: citationObj?.scopus_id || "",
+        totalCitationsLastYear: citationObj?.total_citations_last_calendar_year ?? "",
+        ppsuCitationsLastYear: citationObj?.total_ppsu_citations_last_calendar_year ?? "",
+        depositedAmount: projectObj?.amount_deposited_in_ppsu ?? "",
+        depositDate: projectObj?.deposit_date || "",
+        depositProofUrl: projectObj?.deposit_proof_url || "",
       },
     }));
   }, [initialClaimData]);
@@ -417,7 +427,7 @@ export function useClaimForm(initialClaimData?: any) {
       case "claim_type":
         return !!state.claimType;
       case "details": {
-        if (!state.details.workTitle && !state.details.title && !state.details.paperTitle) return false;
+        if (state.claimType !== "citation" && !state.details.workTitle && !state.details.title && !state.details.paperTitle) return false;
         if (state.details.recognizedBody === "Other Body" && !state.details.otherRecognizedBody) return false;
 
         // Strict mandatory check for Research / Review Paper
@@ -440,6 +450,7 @@ export function useClaimForm(initialClaimData?: any) {
         if (state.claimType === "book") {
           const d = state.details;
           if (!d.paperTitle && !d.workTitle && !d.title) return false;
+          if (!d.publisher && !d.publisherName) return false;
           if (!d.isbn || !String(d.isbn).trim()) return false;
           if (!d.recognizedBody || !String(d.recognizedBody).trim()) return false;
           if (!d.publicationDate && !d.bookPubDate) return false;
@@ -474,8 +485,6 @@ export function useClaimForm(initialClaimData?: any) {
         // Strict mandatory check for Citation
         if (state.claimType === "citation") {
           const d = state.details;
-          if (!d.paperTitle && !d.workTitle && !d.title) return false;
-          if (!d.journalTitle && !d.journalName) return false;
           if (!d.scopusId || !String(d.scopusId).trim()) return false;
           if (d.totalCitationsLastYear === undefined || d.totalCitationsLastYear === null || String(d.totalCitationsLastYear).trim() === "") return false;
           if (d.ppsuCitationsLastYear === undefined || d.ppsuCitationsLastYear === null || String(d.ppsuCitationsLastYear).trim() === "") return false;

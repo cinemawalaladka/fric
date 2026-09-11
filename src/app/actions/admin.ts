@@ -1413,3 +1413,136 @@ export async function seedDemoClaims() {
     return { success: false, error: err?.message || "Failed to seed demo claims." };
   }
 }
+
+export interface CreateUserInput {
+  name: string;
+  email: string;
+  password?: string;
+  employee_id?: string;
+  designation: string;
+  department_id?: string;
+  roles: UserRole[];
+  verifier_stage?: string;
+}
+
+export async function createAdminUser(input: CreateUserInput) {
+  if (!(await verifyAdminSession())) {
+    return { success: false, error: "Unauthorized access. Super Admin credentials required." };
+  }
+
+  const cleanName = input.name?.trim();
+  const cleanEmail = input.email?.trim().toLowerCase();
+  const password = input.password?.trim() || "PPSU@2026!";
+  const employeeId = input.employee_id?.trim() || `EMP${Math.floor(1000 + Math.random() * 9000)}`;
+  const designation = input.designation?.trim() || "Assistant Professor";
+  const roles = input.roles && input.roles.length > 0 ? input.roles : (["FACULTY"] as UserRole[]);
+
+  if (!cleanName) return { success: false, error: "Full Name is required." };
+  if (!cleanEmail || !cleanEmail.includes("@")) return { success: false, error: "Valid institutional email is required." };
+  if (password.length < 8) return { success: false, error: "Initial password must be at least 8 characters." };
+
+  try {
+    const adminSupabase = createAdminClient();
+
+    // 1. Check if auth user already exists
+    const { data: existingAuth } = await adminSupabase.auth.admin.listUsers({ perPage: 100 });
+    const duplicate = existingAuth?.users?.find((u) => u.email?.toLowerCase() === cleanEmail);
+    if (duplicate) {
+      return { success: false, error: `A user with email "${cleanEmail}" already exists in authentication records.` };
+    }
+
+    // 2. Create Auth User with must_change_password: true
+    const { data: authCreated, error: authErr } = await adminSupabase.auth.admin.createUser({
+      email: cleanEmail,
+      password: password,
+      email_confirm: true,
+      user_metadata: {
+        name: cleanName,
+        must_change_password: true,
+      },
+    });
+
+    if (authErr || !authCreated?.user) {
+      return { success: false, error: authErr?.message || "Failed to create user in authentication service." };
+    }
+
+    const userId = authCreated.user.id;
+
+    // 3. Insert public.users
+    await adminSupabase.from("users").upsert({
+      id: userId,
+      auth_user_id: userId,
+      email: cleanEmail,
+      status: "ACTIVE",
+    });
+
+    // 4. Insert public.faculty (schema-safe with must_change_password)
+    const baseFaculty = {
+      auth_user_id: userId,
+      name: cleanName,
+      email: cleanEmail,
+      employee_id: employeeId,
+      department_id: input.department_id || null,
+      designation: designation,
+      status: "ACTIVE" as FacultyStatus,
+    };
+
+    let { error: facErr } = await adminSupabase.from("faculty").insert({
+      ...baseFaculty,
+      must_change_password: true,
+    });
+
+    if (facErr && facErr.code === "PGRST204") {
+      const retry = await adminSupabase.from("faculty").insert(baseFaculty);
+      facErr = retry.error;
+    }
+
+    if (facErr) {
+      // rollback auth user if faculty creation failed
+      await adminSupabase.auth.admin.deleteUser(userId);
+      return { success: false, error: `Failed to create faculty record: ${facErr.message}` };
+    }
+
+    // 5. Assign Roles
+    const { data: allRoles } = await adminSupabase.from("roles").select("id, name");
+    if (allRoles) {
+      const roleMap = new Map<string, string>();
+      allRoles.forEach((r) => roleMap.set(r.name, r.id));
+
+      for (const role of roles) {
+        const roleId = roleMap.get(role);
+        if (roleId) {
+          await adminSupabase.from("user_roles").insert({
+            user_id: userId,
+            role_id: roleId,
+            status: "ACTIVE",
+          });
+        }
+      }
+    }
+
+    // 6. Audit log
+    const actorId = await getCurrentActorId();
+    await adminSupabase.from("audit_logs").insert({
+      action: "CREATE_USER",
+      entity_type: "USER",
+      entity_id: userId,
+      actor_id: actorId,
+      details: {
+        name: cleanName,
+        email: cleanEmail,
+        employee_id: employeeId,
+        roles: roles,
+      },
+    });
+
+    return {
+      success: true,
+      userId,
+      message: `User ${cleanName} created successfully with temporary password.`,
+    };
+  } catch (err: any) {
+    return { success: false, error: err?.message || "An unexpected error occurred during user creation." };
+  }
+}
+

@@ -22,6 +22,7 @@ import {
   BadgeCheck,
   Mail,
   UserCheck,
+  ShieldAlert,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -43,6 +44,7 @@ import {
   removeUserRole,
   updateFacultyProfile,
   getDepartments,
+  createAdminUser,
 } from "@/app/actions/admin";
 import { type UserRole, type FacultyStatus } from "@/types";
 import { cn } from "@/lib/utils";
@@ -130,6 +132,53 @@ export default function AdminUsersPage() {
   const [updating, setUpdating] = useState(false);
   const [selectedVerifierStage, setSelectedVerifierStage] = useState<string>("HOD_PRINCIPAL");
   const [roleUpdating, setRoleUpdating] = useState<string | null>(null);
+
+  // Create user form state
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [createName, setCreateName] = useState("");
+  const [createEmail, setCreateEmail] = useState("");
+  const [createPassword, setCreatePassword] = useState("PPSU@2026!");
+  const [createEmpId, setCreateEmpId] = useState("");
+  const [createDesignation, setCreateDesignation] = useState("Assistant Professor");
+  const [createDeptId, setCreateDeptId] = useState("");
+  const [createRoles, setCreateRoles] = useState<UserRole[]>(["FACULTY"]);
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateError(null);
+    setCreatingUser(true);
+    try {
+      const res = await createAdminUser({
+        name: createName,
+        email: createEmail,
+        password: createPassword,
+        employee_id: createEmpId,
+        designation: createDesignation,
+        department_id: createDeptId || undefined,
+        roles: createRoles,
+      });
+
+      if (res.success) {
+        setCreateModalOpen(false);
+        setCreateName("");
+        setCreateEmail("");
+        setCreatePassword("PPSU@2026!");
+        setCreateEmpId("");
+        setCreateDesignation("Assistant Professor");
+        setCreateDeptId("");
+        setCreateRoles(["FACULTY"]);
+        await fetchUsersData();
+      } else {
+        setCreateError(res.error || "Failed to create user.");
+      }
+    } catch {
+      setCreateError("An unexpected error occurred while creating user.");
+    } finally {
+      setCreatingUser(false);
+    }
+  };
 
   const fetchUsersData = async () => {
     setLoading(true);
@@ -247,6 +296,16 @@ export default function AdminUsersPage() {
             View, edit profiles, and manage system roles for all registered users
           </p>
         </div>
+        <Button
+          onClick={() => {
+            setCreateError(null);
+            setCreateModalOpen(true);
+          }}
+          className="bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold text-xs gap-2 rounded-none px-4 h-9 shadow-xs shrink-0 cursor-pointer"
+        >
+          <Plus className="h-4 w-4" />
+          Create New User
+        </Button>
       </div>
 
       {/* Toolbar */}
@@ -281,9 +340,22 @@ export default function AdminUsersPage() {
           <h3 className="text-sm font-bold uppercase tracking-wider text-slate-800">
             Registered Users
           </h3>
-          <span className="text-xs font-mono font-semibold text-slate-500">
-            {loading ? "Loading..." : `${filtered.length} Users Listed`}
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-mono font-semibold text-slate-500">
+              {loading ? "Loading..." : `${filtered.length} Users Listed`}
+            </span>
+            <Button
+              size="sm"
+              onClick={() => {
+                setCreateError(null);
+                setCreateModalOpen(true);
+              }}
+              className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-[11px] gap-1.5 h-7 rounded-none px-3 cursor-pointer"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add User
+            </Button>
+          </div>
         </div>
 
         {loading ? (
@@ -683,6 +755,204 @@ export default function AdminUsersPage() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* ==================== CREATE NEW USER DIALOG ==================== */}
+      <Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>
+        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold flex items-center gap-2">
+              <Plus className="h-5 w-5 text-[#b91c1c]" />
+              Create New User Account
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Add a new faculty member, reviewer, or administrative user to the institutional directory.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateUser} className="space-y-4 pt-2">
+            {createError && (
+              <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
+                <span>{createError}</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="create-name" className="text-xs font-semibold">
+                  Full Name <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="create-name"
+                  value={createName}
+                  onChange={(e) => setCreateName(e.target.value)}
+                  placeholder="e.g. Dr. Rajesh Patel"
+                  required
+                  className="text-xs h-9"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="create-email" className="text-xs font-semibold">
+                  Institutional Email <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="create-email"
+                  type="email"
+                  value={createEmail}
+                  onChange={(e) => setCreateEmail(e.target.value)}
+                  placeholder="e.g. rajesh@soe.ppsu.in"
+                  required
+                  className="text-xs h-9"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="create-password" className="text-xs font-semibold">
+                    Temporary Password <span className="text-red-500">*</span>
+                  </Label>
+                  <button
+                    type="button"
+                    onClick={() => setCreatePassword(`PPSU@${Math.floor(1000 + Math.random() * 9000)}!`)}
+                    className="text-[10px] text-[#b91c1c] hover:underline font-semibold"
+                  >
+                    Auto-Generate
+                  </button>
+                </div>
+                <Input
+                  id="create-password"
+                  value={createPassword}
+                  onChange={(e) => setCreatePassword(e.target.value)}
+                  required
+                  className="text-xs h-9 font-mono"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="create-empid" className="text-xs font-semibold">
+                  Employee ID
+                </Label>
+                <Input
+                  id="create-empid"
+                  value={createEmpId}
+                  onChange={(e) => setCreateEmpId(e.target.value)}
+                  placeholder="e.g. EMP045"
+                  className="text-xs h-9"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="create-dept" className="text-xs font-semibold">
+                  Department / School
+                </Label>
+                <select
+                  id="create-dept"
+                  value={createDeptId}
+                  onChange={(e) => setCreateDeptId(e.target.value)}
+                  className="w-full h-9 px-3 rounded-md border border-input bg-background text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                >
+                  <option value="">Select Department</option>
+                  {departments.map((dept) => (
+                    <option key={dept.id} value={dept.id}>
+                      {dept.name} ({dept.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="create-desig" className="text-xs font-semibold">
+                  Designation
+                </Label>
+                <Input
+                  id="create-desig"
+                  value={createDesignation}
+                  onChange={(e) => setCreateDesignation(e.target.value)}
+                  placeholder="e.g. Assistant Professor"
+                  className="text-xs h-9"
+                />
+              </div>
+            </div>
+
+            {/* System Roles & Permissions Selection */}
+            <div className="space-y-2 pt-2 border-t border-slate-200">
+              <Label className="text-xs font-semibold block">
+                Assign System Roles & Permissions <span className="text-red-500">*</span>
+              </Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {AVAILABLE_ROLES.map((role) => {
+                  const checked = createRoles.includes(role);
+                  return (
+                    <label
+                      key={role}
+                      className={cn(
+                        "flex items-center gap-2 p-2 rounded border text-xs cursor-pointer transition-colors",
+                        checked
+                          ? "bg-red-50/80 border-red-200 text-red-900 font-semibold"
+                          : "bg-slate-50/60 border-slate-200 text-slate-700 hover:bg-slate-100"
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          if (checked) {
+                            if (createRoles.length > 1) {
+                              setCreateRoles(createRoles.filter((r) => r !== role));
+                            }
+                          } else {
+                            setCreateRoles([...createRoles, role]);
+                          }
+                        }}
+                        className="rounded border-slate-300 text-[#b91c1c] focus:ring-red-500 cursor-pointer"
+                      />
+                      <span>{roleLabel(role)}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Notice Callout */}
+            <div className="p-3 rounded-lg bg-amber-50/80 border border-amber-200/80 text-amber-900 text-xs flex items-start gap-2">
+              <ShieldAlert className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+              <div className="leading-relaxed">
+                <strong>Mandatory Password Reset:</strong> This user will be created with a temporary password and will be automatically required to set their own permanent password on their first login.
+              </div>
+            </div>
+
+            <DialogFooter className="pt-3 border-t border-slate-200 flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setCreateModalOpen(false)}
+                disabled={creatingUser}
+                className="flex-1 rounded-none text-xs h-9"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={creatingUser}
+                className="flex-1 bg-[#b91c1c] hover:bg-[#991b1b] text-white font-bold text-xs h-9 rounded-none gap-1.5 cursor-pointer"
+              >
+                {creatingUser ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Creating User Account...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4" />
+                    Create User Account
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

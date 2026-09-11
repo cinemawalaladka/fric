@@ -95,6 +95,12 @@ export default function LoginPage() {
         return;
       }
 
+      // 3.5 Check Mandatory First-Login Password Change
+      if (user.user_metadata?.must_change_password === true) {
+        window.location.href = "/change-password";
+        return;
+      }
+
       // 4. Fetch User Roles for Routing
       const { data: userRoles } = await supabase
         .from("user_roles")

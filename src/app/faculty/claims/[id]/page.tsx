@@ -355,29 +355,109 @@ export default function FacultyClaimDetailPage({ params }: { params: Promise<{ i
                 </div>
               </div>
 
-              {/* Publication / Specific info */}
-              {claim.publications?.[0] && (
-                <div className="space-y-3 pt-3 border-t border-border/40">
-                  <div>
-                    <span className="text-xs text-muted-foreground block">Journal Name</span>
-                    <span className="font-medium">{claim.publications[0].journal_name}</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <span className="text-xs text-muted-foreground block">Indexing</span>
-                      <span>{claim.publications[0].indexing || "N/A"}</span>
-                    </div>
-                    <div>
-                      <span className="text-xs text-muted-foreground block">Quartile</span>
-                      <span>{claim.publications[0].quartile || "N/A"}</span>
-                    </div>
-                    <div>
-                      <span className="text-xs text-muted-foreground block">Impact Factor</span>
-                      <span>{claim.publications[0].impact_factor || "N/A"}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Publication / Book / Citation info */}
+              {(() => {
+                const pubItem = Array.isArray(claim.publications) ? claim.publications[0] : claim.publications;
+                const bookItem = Array.isArray(claim.books) ? claim.books[0] : claim.books;
+                const citationItem = Array.isArray(claim.citations) ? claim.citations[0] : claim.citations;
+                return (
+                  <>
+                    {pubItem && (
+                      <div className="space-y-3 pt-3 border-t border-border/40">
+                        <div>
+                          <span className="text-xs text-muted-foreground block">Journal Name</span>
+                          <span className="font-medium">{pubItem.journal_name}</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div>
+                            <span className="text-xs text-muted-foreground block">Indexing</span>
+                            <span>{pubItem.indexing || "N/A"}</span>
+                          </div>
+                          <div>
+                            <span className="text-xs text-muted-foreground block">Quartile</span>
+                            <span>{pubItem.quartile || "N/A"}</span>
+                          </div>
+                          <div>
+                            <span className="text-xs text-muted-foreground block">Impact Factor</span>
+                            <span>{pubItem.impact_factor || "N/A"}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {bookItem && (
+                      <div className="space-y-3 pt-3 border-t border-border/40">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <span className="text-xs text-muted-foreground block">Title of Publish</span>
+                            <span className="font-semibold text-foreground">{bookItem.title}</span>
+                          </div>
+                          <div>
+                            <span className="text-xs text-muted-foreground block">Name of Publisher</span>
+                            <span className="font-semibold text-foreground">{bookItem.publisher || "—"}</span>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          <div>
+                            <span className="text-xs text-muted-foreground block">ISBN Number</span>
+                            <span className="font-medium">{bookItem.isbn || "—"}</span>
+                          </div>
+                          <div>
+                            <span className="text-xs text-muted-foreground block">Level</span>
+                            <span className="font-medium">{bookItem.publication_level || "—"}</span>
+                          </div>
+                          <div>
+                            <span className="text-xs text-muted-foreground block">Recognized Body</span>
+                            <span className="font-medium">{bookItem.recognized_body || (bookItem.scopus_indexed ? "Scopus" : "—")}</span>
+                          </div>
+                          <div>
+                            <span className="text-xs text-muted-foreground block">Publication Date</span>
+                            <span className="font-medium">{bookItem.publication_date || "—"}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {citationItem && (
+                      <div className="space-y-3 pt-3 border-t border-border/40">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <span className="text-xs text-muted-foreground block">Scopus ID</span>
+                            <span className="font-semibold font-mono text-foreground">{citationItem.scopus_id || "—"}</span>
+                          </div>
+                          <div>
+                            <span className="text-xs text-muted-foreground block">Eligible Citations Claimed</span>
+                            <span className="font-bold text-[#b91c1c] font-mono text-base">{citationItem.citation_count || 0}</span>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          <div>
+                            <span className="text-xs text-muted-foreground block">Total Citations (Last Year)</span>
+                            <span className="font-medium">{citationItem.total_citations_last_calendar_year ?? "—"}</span>
+                          </div>
+                          <div>
+                            <span className="text-xs text-muted-foreground block">PPSU Citations (Last Year)</span>
+                            <span className="font-medium">{citationItem.total_ppsu_citations_last_calendar_year ?? "—"}</span>
+                          </div>
+                          {citationItem.verification_url && (
+                            <div className="col-span-2 sm:col-span-1">
+                              <span className="text-xs text-muted-foreground block">Profile URL</span>
+                              <a
+                                href={citationItem.verification_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-600 hover:underline truncate block"
+                              >
+                                View Scopus Profile
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </CardContent>
           </Card>
 

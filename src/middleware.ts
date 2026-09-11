@@ -54,29 +54,45 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/auth/') ||
     pathname === '/login' ||
     pathname === '/admin-login' ||
+    pathname === '/change-password' ||
     pathname.endsWith('.pdf') ||
     pathname.endsWith('.html') ||
     pathname.endsWith('.ico')
   ) {
+    // If user is on change-password without being authenticated, send them to login
+    if (pathname === '/change-password' && !user) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      return NextResponse.redirect(url);
+    }
     return supabaseResponse;
+  }
+
+  // ====== Protected routes — require Supabase auth or Admin session ======
+  const adminSession = request.cookies.get('admin_session');
+
+  if (!user && !adminSession?.value) {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname.startsWith('/admin') ? '/admin-login' : '/login';
+    url.searchParams.set('redirectTo', pathname);
+    return NextResponse.redirect(url);
+  }
+
+  // ====== Mandatory First-Login Password Change Enforcement ======
+  const mustChangePassword = user?.user_metadata?.must_change_password === true;
+  if (mustChangePassword && pathname !== '/change-password') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/change-password';
+    return NextResponse.redirect(url);
   }
 
   // ====== Admin routes — check admin session cookie or authenticated Supabase user ======
   if (pathname.startsWith('/admin')) {
-    const adminSession = request.cookies.get('admin_session');
     if (adminSession?.value || user) {
       return supabaseResponse;
     }
     const url = request.nextUrl.clone();
     url.pathname = '/admin-login';
-    return NextResponse.redirect(url);
-  }
-
-  // ====== Protected routes — require Supabase auth ======
-  if (!user) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    url.searchParams.set('redirectTo', pathname);
     return NextResponse.redirect(url);
   }
 

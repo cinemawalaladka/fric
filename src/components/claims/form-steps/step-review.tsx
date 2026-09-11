@@ -81,12 +81,14 @@ export function StepReview({
 
   // Extract common titles and properties with all fallback aliases
   const workTitle =
-    details.paperTitle ||
-    details.workTitle ||
-    details.title ||
-    details.chapterTitle ||
-    details.patentTitle ||
-    "Untitled Work";
+    claimType === "citation"
+      ? (details.scopusId ? `Faculty Citation Impact (Scopus ID: ${details.scopusId})` : "Faculty Citation Impact")
+      : (details.paperTitle ||
+        details.workTitle ||
+        details.title ||
+        details.chapterTitle ||
+        details.patentTitle ||
+        "Untitled Work");
 
   const containerTitle =
     details.journalTitle ||
@@ -116,6 +118,7 @@ export function StepReview({
 
   if (claimType === "book") {
     addRow("Title of Publish", workTitle, true);
+    addRow("Name of Publisher", details.publisher || details.publisherName);
     addRow("Publication Level", details.publicationLevel || details.publisherType);
     if (details.recognizedBody) addRow("Recognized Body", details.recognizedBody);
     if (details.recognizedBody === "Other Body" && details.otherRecognizedBody) addRow("Specified Body", details.otherRecognizedBody);
@@ -127,7 +130,7 @@ export function StepReview({
     addRow("Title of Chapter", details.chapterTitle || workTitle, true);
     addRow("Title of Book", details.bookTitle || containerTitle);
     addRow("Publication Level", details.publicationLevel || details.publisherType);
-    if (details.recognizedBody) addRow("Recognized Body", details.recognizedBody);
+    addRow("Recognized Body", details.recognizedBody);
     if (details.recognizedBody === "Other Body" && details.otherRecognizedBody) addRow("Specified Body", details.otherRecognizedBody);
     addRow("ISBN Number", identifier);
     addRow("DOI", details.doi);
@@ -142,17 +145,11 @@ export function StepReview({
     addRow("Patent Number / Application No.", identifier);
     addRow("Filing / Grant Date", details.publicationDate || details.grantDate || details.filingDate);
   } else if (claimType === "citation") {
-    addRow("Title of Paper Receiving Citations", workTitle, true);
-    addRow("Journal Name", containerTitle);
-    addRow("Citation Database", details.citationDb || "Scopus");
-    addRow("Scopus ID", details.scopusId);
+    addRow("Scopus ID", details.scopusId, true);
     addRow("Total Citations in Last Calendar Year (Scopus)", details.totalCitationsLastYear);
     addRow("Total Citations in Last Calendar Year Having PPSU Affiliation", details.ppsuCitationsLastYear);
     addRow("Number of Eligible Citations Claimed", details.eligibleCitations || details.citationCount, true);
-    addRow("DOI / Handle", details.doi);
-    addRow("ISSN", details.issn);
-    addRow("Publication Year", details.pubYear || details.publicationYear);
-    addRow("Scopus / Profile or Paper URL", details.scopusLink || details.verificationUrl);
+    addRow("Scopus / Profile URL", details.scopusLink || details.verificationUrl);
   } else if (claimType === "research_project") {
     addRow("Research Project Title", workTitle, true);
     addRow("Sponsoring Body / Funding Agency", details.sponsoringBody);
@@ -229,7 +226,9 @@ export function StepReview({
           </div>
 
           <div>
-            <p className="text-xs text-slate-400 uppercase font-semibold tracking-wider">Title of Work</p>
+            <p className="text-xs text-slate-400 uppercase font-semibold tracking-wider">
+              {claimType === "citation" ? "Citation Claim" : "Title of Work"}
+            </p>
             <h3 className="text-base sm:text-lg font-bold text-white mt-0.5 leading-snug line-clamp-2">
               {workTitle}
             </h3>

@@ -397,14 +397,14 @@ async function seed() {
       await supabase.auth.admin.updateUserById(userId, {
         password: def.password,
         email_confirm: true,
-        user_metadata: { name: def.name },
+        user_metadata: { name: def.name, must_change_password: true },
       });
     } else {
       const { data: created, error: createErr } = await supabase.auth.admin.createUser({
         email: def.email,
         password: def.password,
         email_confirm: true,
-        user_metadata: { name: def.name },
+        user_metadata: { name: def.name, must_change_password: true },
       });
 
       if (createErr || !created.user) {
@@ -426,24 +426,36 @@ async function seed() {
       { onConflict: "id" }
     );
 
-    // Upsert public.faculty
+    // Upsert public.faculty (schema-safe with must_change_password fallback)
     const deptId = deptMap.get(def.deptCode) || null;
-    const { data: facultyData, error: facUpsertErr } = await supabase
+    const baseFacultyPayload = {
+      auth_user_id: userId,
+      name: def.name,
+      email: def.email,
+      employee_id: def.employeeId,
+      department_id: deptId,
+      designation: def.designation,
+      status: "ACTIVE",
+    };
+
+    let { data: facultyData, error: facUpsertErr } = await supabase
       .from("faculty")
       .upsert(
-        {
-          auth_user_id: userId,
-          name: def.name,
-          email: def.email,
-          employee_id: def.employeeId,
-          department_id: deptId,
-          designation: def.designation,
-          status: "ACTIVE",
-        },
+        { ...baseFacultyPayload, must_change_password: true },
         { onConflict: "auth_user_id" }
       )
       .select()
       .single();
+
+    if (facUpsertErr && facUpsertErr.code === "PGRST204") {
+      const retry = await supabase
+        .from("faculty")
+        .upsert(baseFacultyPayload, { onConflict: "auth_user_id" })
+        .select()
+        .single();
+      facultyData = retry.data;
+      facUpsertErr = retry.error;
+    }
 
     if (facUpsertErr) {
       console.error(`  Error upserting faculty record:`, facUpsertErr.message);

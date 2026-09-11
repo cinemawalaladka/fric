@@ -348,57 +348,85 @@ export async function createClaim(
       });
       detailErr = error;
     } else if (claimTypeCode === "BOOK" || claimTypeCode === "BOOK_CHAPTER") {
-      const { error } = await adminSupabase.from("books").insert({
+      const bookPayload: Record<string, any> = {
         claim_id: claim.id,
         title: details.workTitle || details.paperTitle || details.title || "Book Title",
-        work_title: details.workTitle || details.title || details.paperTitle || null,
-        publisher: details.publisher || details.journalTitle || null,
+        publisher: details.publisher || details.publisherName || details.journalTitle || null,
         isbn: details.isbn || null,
         publication_date: details.publicationDate || details.bookPubDate || null,
         book_type: claimTypeCode === "BOOK_CHAPTER" ? "CHAPTER" : (details.bookType || "AUTHORED"),
         chapter_title: details.chapterTitle || null,
         scopus_indexed: details.recognizedBody === "Scopus" || !!details.scopusIndexed,
+      };
+
+      let { error } = await adminSupabase.from("books").insert({
+        ...bookPayload,
+        work_title: details.workTitle || details.title || details.paperTitle || null,
         publication_level: details.publicationLevel || "International",
         recognized_body: details.recognizedBody || null,
         other_recognized_body: details.otherRecognizedBody || null,
         web_link: details.webLink || null,
         doi: details.doi || null,
       });
+
+      if (error && error.code === "PGRST204") {
+        const retry = await adminSupabase.from("books").insert(bookPayload);
+        error = retry.error;
+      }
       detailErr = error;
 
       if (claimTypeCode === "BOOK_CHAPTER") {
-        await adminSupabase.from("book_chapters").insert({
+        const chapterPayload: Record<string, any> = {
           claim_id: claim.id,
           chapter_title: details.chapterTitle || details.paperTitle || details.workTitle || "Chapter Title",
           book_title: details.bookTitle || details.journalTitle || details.publisher || "Book Title",
-          publisher: details.publisher || details.journalTitle || null,
+          publisher: details.publisher || details.publisherName || details.journalTitle || null,
           isbn: details.isbn || null,
           publication_date: details.publicationDate || details.bookPubDate || null,
           chapter_pages: details.chapterPages || null,
+        };
+
+        const { error: chErr } = await adminSupabase.from("book_chapters").insert({
+          ...chapterPayload,
           doi: details.doi || null,
           web_link: details.webLink || null,
           publication_level: details.publicationLevel || "International",
           recognized_body: details.recognizedBody || null,
           other_recognized_body: details.otherRecognizedBody || null,
         });
+
+        if (chErr && chErr.code === "PGRST204") {
+          await adminSupabase.from("book_chapters").insert(chapterPayload);
+        }
       }
     } else if (claimTypeCode === "CITATION") {
-      const { error } = await adminSupabase.from("citations").insert({
+      const citationTitle =
+        details.sourceTitle ||
+        (details.scopusId
+          ? `Faculty Citation Impact (Scopus ID: ${details.scopusId})`
+          : "Faculty Citation Impact");
+
+      const baseCitationPayload: Record<string, any> = {
         claim_id: claim.id,
-        source_title: details.paperTitle || details.workTitle || details.title || "Paper Title",
-        citation_database: details.citationDb || details.recognizedBody || "Scopus",
+        source_title: citationTitle,
         citation_count: Number(details.eligibleCitations || details.citationCount || 0),
+        verification_url: details.scopusLink || details.verificationUrl || null,
         h_index: details.hIndex ? Number(details.hIndex) : null,
         i10_index: details.i10Index ? Number(details.i10Index) : null,
-        verification_url: details.scopusLink || details.verificationUrl,
+      };
+
+      const enhancedCitationPayload: Record<string, any> = {
+        ...baseCitationPayload,
         scopus_id: details.scopusId || null,
         total_citations_last_calendar_year: details.totalCitationsLastYear ? Number(details.totalCitationsLastYear) : null,
         total_ppsu_citations_last_calendar_year: details.ppsuCitationsLastYear ? Number(details.ppsuCitationsLastYear) : null,
-        journal_name: details.journalTitle || details.journalName || null,
-        doi: details.doi || null,
-        issn: details.issn || null,
-        publication_year: details.pubYear || details.publicationYear ? Number(details.pubYear || details.publicationYear) : null,
-      });
+      };
+
+      let { error } = await adminSupabase.from("citations").insert(enhancedCitationPayload);
+      if (error && error.code === "PGRST204") {
+        const retry = await adminSupabase.from("citations").insert(baseCitationPayload);
+        error = retry.error;
+      }
       detailErr = error;
     } else if (claimTypeCode === "RESEARCH_PROJECT") {
       const { data: projData, error: projErr } = await adminSupabase
@@ -622,16 +650,20 @@ export async function updateClaim(
         inventors: details.inventors || null,
       });
     } else if (claimTypeCode === "BOOK" || claimTypeCode === "BOOK_CHAPTER") {
-      await adminSupabase.from("books").upsert({
+      const bookPayload: Record<string, any> = {
         claim_id: claimId,
         title: details.workTitle || details.paperTitle || details.title || "Book Title",
-        work_title: details.workTitle || details.title || details.paperTitle || null,
-        publisher: details.publisher || details.journalTitle || null,
+        publisher: details.publisher || details.publisherName || details.journalTitle || null,
         isbn: details.isbn || null,
         publication_date: details.publicationDate || details.bookPubDate || null,
         book_type: claimTypeCode === "BOOK_CHAPTER" ? "CHAPTER" : (details.bookType || "AUTHORED"),
         chapter_title: details.chapterTitle || null,
         scopus_indexed: details.recognizedBody === "Scopus" || !!details.scopusIndexed,
+      };
+
+      const { error: upsertErr } = await adminSupabase.from("books").upsert({
+        ...bookPayload,
+        work_title: details.workTitle || details.title || details.paperTitle || null,
         publication_level: details.publicationLevel || "International",
         recognized_body: details.recognizedBody || null,
         other_recognized_body: details.otherRecognizedBody || null,
@@ -639,39 +671,61 @@ export async function updateClaim(
         doi: details.doi || null,
       });
 
+      if (upsertErr && upsertErr.code === "PGRST204") {
+        await adminSupabase.from("books").upsert(bookPayload);
+      }
+
       if (claimTypeCode === "BOOK_CHAPTER") {
-        await adminSupabase.from("book_chapters").upsert({
+        const chapterPayload: Record<string, any> = {
           claim_id: claimId,
           chapter_title: details.chapterTitle || details.paperTitle || details.workTitle || "Chapter Title",
           book_title: details.bookTitle || details.journalTitle || details.publisher || "Book Title",
-          publisher: details.publisher || details.journalTitle || null,
+          publisher: details.publisher || details.publisherName || details.journalTitle || null,
           isbn: details.isbn || null,
           publication_date: details.publicationDate || details.bookPubDate || null,
           chapter_pages: details.chapterPages || null,
+        };
+
+        const { error: chUpsertErr } = await adminSupabase.from("book_chapters").upsert({
+          ...chapterPayload,
           doi: details.doi || null,
           web_link: details.webLink || null,
           publication_level: details.publicationLevel || "International",
           recognized_body: details.recognizedBody || null,
           other_recognized_body: details.otherRecognizedBody || null,
         });
+
+        if (chUpsertErr && chUpsertErr.code === "PGRST204") {
+          await adminSupabase.from("book_chapters").upsert(chapterPayload);
+        }
       }
     } else if (claimTypeCode === "CITATION") {
-      await adminSupabase.from("citations").upsert({
+      const citationTitle =
+        details.sourceTitle ||
+        (details.scopusId
+          ? `Faculty Citation Impact (Scopus ID: ${details.scopusId})`
+          : "Faculty Citation Impact");
+
+      const baseCitationPayload: Record<string, any> = {
         claim_id: claimId,
-        source_title: details.paperTitle || details.workTitle || details.title || "Paper Title",
-        citation_database: details.citationDb || details.recognizedBody || "Scopus",
+        source_title: citationTitle,
         citation_count: Number(details.eligibleCitations || details.citationCount || 0),
+        verification_url: details.scopusLink || details.verificationUrl || null,
         h_index: details.hIndex ? Number(details.hIndex) : null,
         i10_index: details.i10Index ? Number(details.i10Index) : null,
-        verification_url: details.scopusLink || details.verificationUrl,
+      };
+
+      const enhancedCitationPayload: Record<string, any> = {
+        ...baseCitationPayload,
         scopus_id: details.scopusId || null,
         total_citations_last_calendar_year: details.totalCitationsLastYear ? Number(details.totalCitationsLastYear) : null,
         total_ppsu_citations_last_calendar_year: details.ppsuCitationsLastYear ? Number(details.ppsuCitationsLastYear) : null,
-        journal_name: details.journalTitle || details.journalName || null,
-        doi: details.doi || null,
-        issn: details.issn || null,
-        publication_year: details.pubYear || details.publicationYear ? Number(details.pubYear || details.publicationYear) : null,
-      });
+      };
+
+      const { error: citUpsertErr } = await adminSupabase.from("citations").upsert(enhancedCitationPayload);
+      if (citUpsertErr && citUpsertErr.code === "PGRST204") {
+        await adminSupabase.from("citations").upsert(baseCitationPayload);
+      }
     } else if (claimTypeCode === "RESEARCH_PROJECT") {
       const { data: projData } = await adminSupabase
         .from("research_projects")
