@@ -83,6 +83,8 @@ export function StepReview({
   const workTitle =
     claimType === "citation"
       ? (details.scopusId ? `Faculty Citation Impact (Scopus ID: ${details.scopusId})` : "Faculty Citation Impact")
+      : claimType === "phd_scholar"
+      ? `PhD Scholar: ${details.scholarName || "Scholar"} (${details.scholarEnrollmentId || "ID"})`
       : (details.paperTitle ||
         details.workTitle ||
         details.title ||
@@ -171,6 +173,16 @@ export function StepReview({
     }
     if (details.piOrCoPi) addRow("Status on Project", details.piOrCoPi);
     if (details.sponsoringAddress) addRow("Sponsoring Body Address", details.sponsoringAddress);
+  } else if (claimType === "phd_scholar") {
+    addRow("PhD Scholar Name", details.scholarName, true);
+    addRow("PhD Scholar Enrollment ID", details.scholarEnrollmentId, true);
+    addRow("School / University", details.school);
+    addRow("Scholar Department", details.department);
+    addRow("Research Discipline / Subject", details.discipline);
+    addRow("Notification Date", details.notificationDate);
+    if (details.claimedAmount) {
+      addRow("Claimed Incentive Amount", `₹${formatIndianNumber(details.claimedAmount)}`, true);
+    }
   } else {
     addRow("Title of Work / Publication", workTitle, true);
     addRow("Journal / Publisher / Authority", containerTitle);
@@ -227,7 +239,7 @@ export function StepReview({
 
           <div>
             <p className="text-xs text-slate-400 uppercase font-semibold tracking-wider">
-              {claimType === "citation" ? "Citation Claim" : "Title of Work"}
+              {claimType === "citation" ? "Citation Claim" : claimType === "phd_scholar" ? "PhD Scholar Claim" : "Title of Work"}
             </p>
             <h3 className="text-base sm:text-lg font-bold text-white mt-0.5 leading-snug line-clamp-2">
               {workTitle}

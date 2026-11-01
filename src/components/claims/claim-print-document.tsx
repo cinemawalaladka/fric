@@ -366,6 +366,48 @@ export function ClaimPrintDocument({ claim, generatedAt }: ClaimPrintDocumentPro
               </div>
             )}
 
+            {detailItem?.scholar_enrollment_id && (
+              <div className="p-2 bg-slate-50/70 border border-slate-200 rounded">
+                <span className="text-[9px] text-slate-500 uppercase font-bold block">Scholar Enrollment ID</span>
+                <span className="font-mono font-bold text-slate-900 block">{detailItem.scholar_enrollment_id}</span>
+              </div>
+            )}
+
+            {detailItem?.scholar_name && (
+              <div className="p-2 bg-slate-50/70 border border-slate-200 rounded">
+                <span className="text-[9px] text-slate-500 uppercase font-bold block">PhD Scholar Name</span>
+                <span className="font-bold text-slate-900 block">{detailItem.scholar_name}</span>
+              </div>
+            )}
+
+            {detailItem?.school && (
+              <div className="p-2 bg-slate-50/70 border border-slate-200 rounded">
+                <span className="text-[9px] text-slate-500 uppercase font-bold block">School / University</span>
+                <span className="font-semibold text-slate-900 block">{detailItem.school}</span>
+              </div>
+            )}
+
+            {detailItem?.department && (
+              <div className="p-2 bg-slate-50/70 border border-slate-200 rounded">
+                <span className="text-[9px] text-slate-500 uppercase font-bold block">Scholar Department</span>
+                <span className="font-semibold text-slate-900 block">{detailItem.department}</span>
+              </div>
+            )}
+
+            {detailItem?.discipline && (
+              <div className="p-2 bg-slate-50/70 border border-slate-200 rounded">
+                <span className="text-[9px] text-slate-500 uppercase font-bold block">Discipline / Subject</span>
+                <span className="font-semibold text-slate-900 block">{detailItem.discipline}</span>
+              </div>
+            )}
+
+            {detailItem?.notification_date && (
+              <div className="p-2 bg-slate-50/70 border border-slate-200 rounded">
+                <span className="text-[9px] text-slate-500 uppercase font-bold block">Notification Date</span>
+                <span className="font-semibold text-slate-900 block">{formatDateOnly(detailItem.notification_date)}</span>
+              </div>
+            )}
+
             {detailItem?.publication_date && (
               <div className="p-2 bg-slate-50/70 border border-slate-200 rounded">
                 <span className="text-[9px] text-slate-500 uppercase font-bold block">Date of Publication</span>

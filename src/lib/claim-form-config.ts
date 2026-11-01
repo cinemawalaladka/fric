@@ -10,6 +10,7 @@ import {
   Wrench,
   BarChart3,
   FlaskConical,
+  GraduationCap,
   type LucideIcon,
 } from "lucide-react";
 
@@ -86,6 +87,16 @@ export const CLAIM_TYPES: ClaimTypeConfig[] = [
     color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20",
     hasAuthorsStep: false,
     stepLabels: ["Claim Type", "Project Details & PI/Co-PI", "Incentive Summary", "Documents", "Review & Submit"],
+  },
+  {
+    id: "phd_scholar",
+    code: "PHD_SCHOLAR",
+    name: "PhD Scholar",
+    icon: GraduationCap,
+    description: "Incentive claim for PhD Scholar guidance and degree award notification",
+    color: "text-amber-500 bg-amber-500/10 border-amber-500/20",
+    hasAuthorsStep: false,
+    stepLabels: ["Claim Type", "PhD Scholar Details", "Incentive Summary", "Documents", "Review & Submit"],
   },
 ];
 
@@ -192,6 +203,8 @@ export function calculateIncentive(
       return calculateCitationIncentive(result, formData);
     case "research_project":
       return calculateResearchProjectIncentive(result, formData);
+    case "phd_scholar":
+      return calculatePhDScholarIncentive(result, formData);
     default:
       return calculateResearchPaperIncentive(result, formData);
   }
@@ -505,6 +518,57 @@ function calculateResearchProjectIncentive(
   return result;
 }
 
+function calculatePhDScholarIncentive(
+  result: IncentiveCalculation,
+  formData: Record<string, any>
+): IncentiveCalculation {
+  const claimedAmount =
+    parseFloat(String(formData.claimedAmount || formData.claimAmount || 0).replace(/[^0-9.]/g, "")) || 0;
+
+  result.criteriaChecks = [
+    {
+      label: "Scholar Enrollment ID",
+      met: !!formData.scholarEnrollmentId?.trim(),
+      detail: formData.scholarEnrollmentId || "Provided",
+    },
+    {
+      label: "Scholar Name",
+      met: !!formData.scholarName?.trim(),
+      detail: formData.scholarName || "Provided",
+    },
+    {
+      label: "University / School",
+      met: !!formData.school?.trim(),
+      detail: formData.school || "Provided",
+    },
+    {
+      label: "Department & Discipline",
+      met: !!(formData.department?.trim() && formData.discipline?.trim()),
+      detail: `${formData.department || ""} - ${formData.discipline || ""}`,
+    },
+    {
+      label: "Notification Date",
+      met: !!formData.notificationDate,
+      detail: formData.notificationDate || "Not entered",
+    },
+    {
+      label: "Claimed Incentive Amount",
+      met: claimedAmount > 0,
+      detail: claimedAmount > 0 ? `₹${formatIndianNumber(claimedAmount)}` : "Not entered",
+    },
+  ];
+
+  result.applicableCategory = "PhD Scholar Guidance Incentive";
+  result.policyIncentive = claimedAmount;
+  result.facultyShare = claimedAmount;
+  result.ppsuFacultyCount = 1;
+  result.distributionRule = "Faculty Specified Incentive (Subject to Committee & Provost Sanction)";
+  result.policyNote =
+    "PhD scholar incentive claim amount will be reviewed and approved through the verification workflow.";
+
+  return result;
+}
+
 // ============ Required Documents Per Claim Type ============
 
 export interface DocumentSlotConfig {
@@ -557,6 +621,15 @@ export const REQUIRED_DOCUMENTS: Record<string, DocumentSlotConfig[]> = {
     { slotId: "budget_bifurcation", label: "Detailed Budget Bifurcation", mandatory: true },
     { slotId: "approval_proof", label: "Project Approval / Sanction Proof", mandatory: true },
     { slotId: "ppsu_deposit_proof", label: "PPSU Account Deposit Proof (PDF)", mandatory: true },
+    { slotId: "other_docs", label: "Other Supporting Documents", mandatory: false },
+  ],
+  phd_scholar: [
+    {
+      slotId: "phd_scholar_proof",
+      label: "Upload Document (PhD Notification / Degree Award Document)",
+      mandatory: true,
+      helpText: "Official PhD notification letter or degree award certificate proof (PDF or Image, max 10MB)",
+    },
     { slotId: "other_docs", label: "Other Supporting Documents", mandatory: false },
   ],
 };

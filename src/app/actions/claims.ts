@@ -56,6 +56,7 @@ export async function getActiveAcademicYear() {
 
 function getClaimTypePrefix(claimTypeCode: string): string {
   const code = (claimTypeCode || "").toUpperCase();
+  if (code.includes("PHD") || code.includes("SCHOLAR")) return "PHD";
   if (code.includes("PROJECT") || code.includes("GRANT")) return "PRJ";
   if (code.includes("PATENT")) return "PAT";
   if (code.includes("BOOK")) return "BOK";
@@ -470,6 +471,28 @@ export async function createClaim(
         const { error: memErr } = await adminSupabase.from("project_members").insert(coPiMembers);
         if (memErr && !detailErr) detailErr = memErr;
       }
+    } else if (claimTypeCode === "PHD_SCHOLAR") {
+      const phdPayload = {
+        claim_id: claim.id,
+        scholar_enrollment_id: details.scholarEnrollmentId || details.scholar_enrollment_id || "PENDING",
+        scholar_name: details.scholarName || details.scholar_name || "Scholar Name",
+        school: details.school || details.schoolName || details.institution || "PPSU",
+        department: details.department || details.departmentName || "General",
+        discipline: details.discipline || details.subject || "Research",
+        notification_date: details.notificationDate || details.notification_date || null,
+      };
+
+      try {
+        const { error: phdErr } = await adminSupabase.from("phd_scholars").insert(phdPayload);
+        if (phdErr) {
+          console.warn("phd_scholars insert warning:", phdErr.message);
+          if (phdErr.code !== "PGRST205") {
+            detailErr = phdErr;
+          }
+        }
+      } catch (err: any) {
+        console.warn("phd_scholars insert exception:", err?.message);
+      }
     }
 
     if (detailErr) {
@@ -766,6 +789,22 @@ export async function updateClaim(
 
         await adminSupabase.from("project_members").insert(coPiMembers);
       }
+    } else if (claimTypeCode === "PHD_SCHOLAR") {
+      const phdPayload = {
+        claim_id: claimId,
+        scholar_enrollment_id: details.scholarEnrollmentId || details.scholar_enrollment_id || "PENDING",
+        scholar_name: details.scholarName || details.scholar_name || "Scholar Name",
+        school: details.school || details.schoolName || details.institution || "PPSU",
+        department: details.department || details.departmentName || "General",
+        discipline: details.discipline || details.subject || "Research",
+        notification_date: details.notificationDate || details.notification_date || null,
+      };
+
+      try {
+        await adminSupabase.from("phd_scholars").upsert(phdPayload, { onConflict: "claim_id" });
+      } catch (err: any) {
+        console.warn("phd_scholars update exception:", err?.message);
+      }
     }
 
     // Write audit log
@@ -901,6 +940,21 @@ export async function getClaimDetailsWithHistory(claimId: string) {
 
     if (error || !claim) {
       return { success: false, error: error?.message || "Claim not found." };
+    }
+
+    // Safely load PhD scholar details if applicable
+    if (claim.claim_type?.code === "PHD_SCHOLAR") {
+      try {
+        const { data: phdData } = await adminSupabase
+          .from("phd_scholars")
+          .select("*")
+          .eq("claim_id", claimId);
+        claim.phd_scholars = phdData || [];
+      } catch (err: any) {
+        claim.phd_scholars = [];
+      }
+    } else {
+      claim.phd_scholars = [];
     }
 
     if (claim.claim_approvals) {

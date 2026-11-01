@@ -176,6 +176,7 @@ export function useClaimForm(initialClaimData?: any) {
     const patentObj = Array.isArray(initialClaimData.patents) ? initialClaimData.patents[0] : (initialClaimData.patents || {});
     const citationObj = Array.isArray(initialClaimData.citations) ? initialClaimData.citations[0] : (initialClaimData.citations || {});
     const projectObj = Array.isArray(initialClaimData.research_projects) ? initialClaimData.research_projects[0] : (initialClaimData.research_projects || {});
+    const phdObj = Array.isArray(initialClaimData.phd_scholars) ? initialClaimData.phd_scholars[0] : (initialClaimData.phd_scholars || {});
 
     setState((s) => ({
       ...s,
@@ -190,6 +191,7 @@ export function useClaimForm(initialClaimData?: any) {
         ...patentObj,
         ...citationObj,
         ...projectObj,
+        ...phdObj,
         paperTitle: pubObj?.work_title || pubObj?.title || bookObj?.title || "",
         journalTitle: pubObj?.journal_name || pubObj?.title || bookObj?.publisher || "",
         workTitle: pubObj?.work_title || bookObj?.work_title || bookObj?.title || patentObj?.title || "",
@@ -220,6 +222,13 @@ export function useClaimForm(initialClaimData?: any) {
         depositedAmount: projectObj?.amount_deposited_in_ppsu ?? "",
         depositDate: projectObj?.deposit_date || "",
         depositProofUrl: projectObj?.deposit_proof_url || "",
+        scholarEnrollmentId: phdObj?.scholar_enrollment_id || "",
+        scholarName: phdObj?.scholar_name || "",
+        school: phdObj?.school || "",
+        department: phdObj?.department || "",
+        discipline: phdObj?.discipline || "",
+        notificationDate: phdObj?.notification_date || "",
+        claimedAmount: initialClaimData?.claimed_amount || "",
       },
     }));
   }, [initialClaimData]);
@@ -427,7 +436,7 @@ export function useClaimForm(initialClaimData?: any) {
       case "claim_type":
         return !!state.claimType;
       case "details": {
-        if (state.claimType !== "citation" && !state.details.workTitle && !state.details.title && !state.details.paperTitle) return false;
+        if (state.claimType !== "citation" && state.claimType !== "phd_scholar" && !state.details.workTitle && !state.details.title && !state.details.paperTitle) return false;
         if (state.details.recognizedBody === "Other Body" && !state.details.otherRecognizedBody) return false;
 
         // Strict mandatory check for Research / Review Paper
@@ -503,6 +512,19 @@ export function useClaimForm(initialClaimData?: any) {
           if (!d.depositDate) return false;
           const depositProofAttached = !!d.depositProofFile || !!d.depositProofName || state.documents.some((doc) => doc.slotId === "ppsu_deposit_proof" && doc.file !== null);
           if (!depositProofAttached) return false;
+        }
+
+        // Strict mandatory check for PhD Scholar
+        if (state.claimType === "phd_scholar") {
+          const d = state.details;
+          if (!d.scholarEnrollmentId || !String(d.scholarEnrollmentId).trim()) return false;
+          if (!d.scholarName || !String(d.scholarName).trim()) return false;
+          if (!d.school || !String(d.school).trim()) return false;
+          if (!d.department || !String(d.department).trim()) return false;
+          if (!d.discipline || !String(d.discipline).trim()) return false;
+          if (!d.notificationDate || !String(d.notificationDate).trim()) return false;
+          const claimedAmt = parseFloat(String(d.claimedAmount || "").replace(/[^0-9.]/g, "")) || 0;
+          if (claimedAmt <= 0) return false;
         }
 
         return true;

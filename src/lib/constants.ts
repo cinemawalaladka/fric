@@ -340,6 +340,7 @@ export const CLAIM_TYPE_ICONS: Record<string, string> = {
   PATENT: '⚙️',
   CITATION: '📊',
   RESEARCH_PROJECT: '🔬',
+  PHD_SCHOLAR: '🎓',
 };
 
 // ============ Role Labels ============

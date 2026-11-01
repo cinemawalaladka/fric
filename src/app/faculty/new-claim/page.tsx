@@ -14,6 +14,7 @@ import { StepClaimType } from "@/components/claims/form-steps/step-claim-type";
 import { StepCommonPublicationForm } from "@/components/claims/form-steps/step-common-publication";
 import { StepCitation } from "@/components/claims/form-steps/step-citation";
 import { StepResearchProject } from "@/components/claims/form-steps/step-research-project";
+import { StepPhDScholar } from "@/components/claims/form-steps/step-phd-scholar";
 import { StepAuthors } from "@/components/claims/form-steps/step-authors";
 import { StepIncentiveSummary } from "@/components/claims/form-steps/step-incentive-summary";
 import { StepDocuments } from "@/components/claims/form-steps/step-documents";
@@ -256,6 +257,17 @@ export default function NewClaimPage() {
               onRemoveCoPI={removeCoPI}
               onSetDocumentFile={setDocumentFile}
               depositProofFile={state.documents.find((d) => d.slotId === "ppsu_deposit_proof")?.file || state.details.depositProofFile}
+            />
+          );
+        }
+        if (state.claimType === "phd_scholar") {
+          return (
+            <StepPhDScholar
+              faculty={state.faculty}
+              departmentName={departmentName}
+              schoolName={schoolName}
+              details={state.details}
+              onUpdate={updateDetail}
             />
           );
         }

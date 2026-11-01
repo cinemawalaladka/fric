@@ -138,6 +138,7 @@ export interface Claim {
   patents?: Patent[];
   citations?: Citation[];
   research_projects?: ResearchProject[];
+  phd_scholars?: PhDScholar[];
   claim_documents?: ClaimDocument[];
   claim_approvals?: ClaimApproval[];
   claim_comments?: ClaimComment[];
@@ -280,6 +281,19 @@ export interface ProjectMember {
   member_name: string;
   role: string;
   is_pi: boolean;
+}
+
+export interface PhDScholar {
+  id: string;
+  claim_id: string;
+  scholar_enrollment_id: string;
+  scholar_name: string;
+  school: string;
+  department: string;
+  discipline: string;
+  notification_date: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ClaimDocument {

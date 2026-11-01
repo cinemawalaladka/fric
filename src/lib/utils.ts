@@ -24,6 +24,7 @@ export function resolveDetailItem(claim: any): any {
     getFirst(claim.patents) ||
     getFirst(claim.citations) ||
     getFirst(claim.research_projects) ||
+    getFirst(claim.phd_scholars) ||
     null
   );
 }
@@ -35,6 +36,9 @@ export function resolveClaimTitle(claim: any): string {
   if (!claim) return "Untitled Research Claim";
   const item = resolveDetailItem(claim);
   if (item) {
+    if (item.scholar_name) {
+      return `PhD Scholar: ${item.scholar_name} (${item.scholar_enrollment_id || "N/A"})`;
+    }
     if (item.title) return item.title;
     if (item.chapter_title) return item.chapter_title;
     if (item.source_title) return item.source_title;

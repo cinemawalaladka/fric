@@ -1153,6 +1153,12 @@ export async function wipeoutAllClaimsAndDocuments() {
       adminSupabase.from("notifications").delete().neq("id", "00000000-0000-0000-0000-000000000000"),
     ]);
 
+    try {
+      await adminSupabase.from("phd_scholars").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    } catch (e) {
+      // Table may not exist yet in schema
+    }
+
     // 4. Delete all claims
     const { error: claimsDelErr } = await adminSupabase
       .from("claims")

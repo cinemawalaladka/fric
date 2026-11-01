@@ -439,8 +439,47 @@ export default function VerifierClaimDetailPage({ params }: { params: Promise<{ 
                 const pubItem = Array.isArray(claim.publications) ? claim.publications[0] : claim.publications;
                 const bookItem = Array.isArray(claim.books) ? claim.books[0] : claim.books;
                 const citationItem = Array.isArray(claim.citations) ? claim.citations[0] : claim.citations;
+                const phdItem = Array.isArray(claim.phd_scholars) ? claim.phd_scholars[0] : claim.phd_scholars;
                 return (
                   <>
+                    {phdItem && (
+                      <div className="space-y-3 pt-3 border-t border-border/40">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <span className="text-xs text-muted-foreground block">PhD Scholar Full Name</span>
+                            <span className="font-semibold text-primary">{phdItem.scholar_name || "—"}</span>
+                          </div>
+                          <div>
+                            <span className="text-xs text-muted-foreground block">PhD Scholar Enrollment ID</span>
+                            <span className="font-semibold font-mono text-foreground">{phdItem.scholar_enrollment_id || "—"}</span>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <span className="text-xs text-muted-foreground block">University / School</span>
+                            <span className="font-medium text-foreground">{phdItem.school || "—"}</span>
+                          </div>
+                          <div>
+                            <span className="text-xs text-muted-foreground block">Scholar Department</span>
+                            <span className="font-medium text-foreground">{phdItem.department || "—"}</span>
+                          </div>
+                          <div>
+                            <span className="text-xs text-muted-foreground block">Discipline / Subject</span>
+                            <span className="font-medium text-foreground">{phdItem.discipline || "—"}</span>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <span className="text-xs text-muted-foreground block">PhD Notification Date</span>
+                            <span className="font-medium text-foreground">{formatDate(phdItem.notification_date)}</span>
+                          </div>
+                          <div>
+                            <span className="text-xs text-muted-foreground block">Claimed Incentive Amount</span>
+                            <span className="font-bold text-emerald-400 font-mono text-base">{formatInr(claim.claimed_amount)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     {pubItem && (
                       <div className="space-y-3 pt-3 border-t border-border/40">
                         <div>
