@@ -24,7 +24,7 @@ export async function middleware(request: NextRequest) {
   const adminSession = request.cookies.get('admin_session');
   const allCookies = request.cookies.getAll();
   const hasSupabaseAuthCookie = allCookies.some(
-    (c) => c.name.startsWith('sb-') && (c.name.includes('auth-token') || c.name.endsWith('-token'))
+    (c) => c.name.startsWith('sb-') || c.name.includes('supabase')
   );
 
   // If user is accessing /change-password without any session, redirect to login immediately
