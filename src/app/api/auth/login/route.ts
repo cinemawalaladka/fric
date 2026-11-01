@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getSupabaseUrl, getSupabaseAnonKey } from "@/lib/supabase/config";
 import crypto from "crypto";
 
 export async function POST(request: NextRequest) {
@@ -58,12 +59,12 @@ export async function POST(request: NextRequest) {
     }
 
     // ════════════ 2. REGULAR USER AUTHENTICATION (SUPABASE) ════════════
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const supabaseUrl = getSupabaseUrl();
+    const supabaseAnonKey = getSupabaseAnonKey();
 
     if (!supabaseUrl || !supabaseAnonKey) {
       return NextResponse.json(
-        { error: "Server configuration error: Supabase environment variables missing." },
+        { error: "Server configuration error: Supabase credentials missing." },
         { status: 500 }
       );
     }
@@ -154,10 +155,13 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (err: any) {
     console.error("Login route error:", err);
+    let errorMsg = err?.message || "An unexpected error occurred during authentication.";
+    if (errorMsg === "fetch failed") {
+      errorMsg = "Database connection error (fetch failed). Please check your internet connection or try again.";
+    }
     return NextResponse.json(
-      { error: err?.message || "An unexpected error occurred during authentication." },
+      { error: errorMsg },
       { status: 500 }
     );
   }
 }
-
