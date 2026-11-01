@@ -4,7 +4,6 @@ import "./login.css";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import {
   Eye,
   EyeOff,
@@ -54,80 +53,24 @@ export default function LoginPage() {
     const cleanPassword = password.trim();
 
     try {
-      // 1. Super Admin authentication
-      if (cleanEmail.toLowerCase() === "admin@ppsu.in") {
-        const res = await fetch("/api/admin/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: cleanEmail, password: cleanPassword }),
-        });
-        const data = await res.json();
-        if (res.ok && data.success) {
-          window.location.href = "/admin/dashboard";
-          return;
-        } else {
-          setError(data.error || "Invalid administrator credentials.");
-          setLoading(false);
-          return;
-        }
-      }
-
-      // 2. Clear any stale admin session cookies for regular/verifier accounts
-      await fetch("/api/admin/logout", { method: "POST" }).catch(() => {});
-
-      // 3. Standard Supabase Authentication
-      const supabase = createClient();
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
-        password: cleanPassword,
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: cleanEmail, password: cleanPassword }),
       });
 
-      if (authError) {
-        setError(authError.message || "Invalid email or password.");
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setError(data.error || "Invalid email or password.");
         setLoading(false);
         return;
       }
 
-      const user = authData?.user;
-      if (!user) {
-        setError("Authentication failed. User session not found.");
-        setLoading(false);
-        return;
-      }
-
-      // 3.5 Check Mandatory First-Login Password Change
-      if (user.user_metadata?.must_change_password === true) {
-        window.location.href = "/change-password";
-        return;
-      }
-
-      // 4. Fetch User Roles for Routing
-      const { data: userRoles } = await supabase
-        .from("user_roles")
-        .select("roles(name)")
-        .eq("user_id", user.id)
-        .eq("status", "ACTIVE");
-
-      const roles = (userRoles || [])
-        .map((ur: Record<string, unknown>) => {
-          const role = ur.roles as { name: string } | null;
-          return role?.name;
-        })
-        .filter((name): name is string => Boolean(name));
-
-      if (roles.includes("SUPER_ADMIN")) {
-        window.location.href = "/admin/dashboard";
-      } else if (
-        roles.some((role) =>
-          ["HOD", "RESEARCH_COMMITTEE_MEMBER", "GOVERNOR", "PROVOST", "RESEARCH_VERIFIER"].includes(role)
-        )
-      ) {
-        window.location.href = "/verifier/dashboard";
-      } else {
-        window.location.href = "/faculty/dashboard";
-      }
+      // Successful authentication — redirect to the user's authorized dashboard
+      window.location.href = data.redirectTo || "/faculty/dashboard";
     } catch (err: any) {
-      setError(err?.message || "An unexpected authentication error occurred.");
+      setError(err?.message || "An unexpected network error occurred. Please try again.");
       setLoading(false);
     }
   };
