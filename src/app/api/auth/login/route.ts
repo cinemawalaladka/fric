@@ -19,13 +19,15 @@ export async function POST(request: NextRequest) {
     let cleanEmail = String(email).trim().toLowerCase();
     const cleanPassword = String(password).trim();
 
-    // Normalize verifier domain spelling variations (e.g. @verifier vs @verifer)
+    // Normalize verifier & provost domain/email spelling variations
     if (cleanEmail.includes("@verifier.1.ppsu.in")) {
       cleanEmail = cleanEmail.replace("@verifier.1.ppsu.in", "@verifer.1.ppsu.in");
     } else if (cleanEmail.includes("@verifier.2.ppsu.in")) {
       cleanEmail = cleanEmail.replace("@verifier.2.ppsu.in", "@verifer.2.ppsu.in");
     } else if (cleanEmail.includes("@verifier.convenor.ppsu.in")) {
       cleanEmail = cleanEmail.replace("@verifier.convenor.ppsu.in", "@verifer.convenor.ppsu.in");
+    } else if (cleanEmail === "provost@ppsu.in" || cleanEmail === "provost@soe.ppsu.in" || cleanEmail === "provost@demo.ppsu.ac.in") {
+      cleanEmail = "eatovc@ppsu.in";
     }
 
     // ════════════ 1. SUPER ADMIN AUTHENTICATION ════════════
@@ -99,6 +101,7 @@ export async function POST(request: NextRequest) {
     // If initial login fails, check alternate known passwords for committee verifiers & faculty
     if (authError && (authError.message?.toLowerCase().includes("invalid login credentials") || authError.status === 400)) {
       const aliasPasswords: Record<string, string[]> = {
+        "eatovc@ppsu.in": ["EAtoVC@PPSU2026!", "Provost@PPSU2026!", "Provost@2026!", "EAtoVC@2026!"],
         "rameshgohil@verifer.1.ppsu.in": ["Rameshgohil@Verifier2026!", "Ramesh@VER12026!", "Ramesh@Verifier2026!"],
         "aeshishrana@verifer.2.ppsu.in": ["Aeshishrana@Verifier2026!", "Aeshish@VER22026!", "Aeshish@Verifier2026!"],
         "rishalsingh@verifer.convenor.ppsu.in": ["Rishalsingh@Verifier2026!", "Rishal@CONV2026!", "Rishal@Verifier2026!"],
