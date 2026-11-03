@@ -168,6 +168,7 @@ const CLAIM_SELECT = `
   faculty:faculty(id, name, email, department_id, department:departments(name, code)),
   publications(title),
   books(title, chapter_title),
+  book_chapters(chapter_title),
   patents(title),
   citations(source_title),
   research_projects(title)

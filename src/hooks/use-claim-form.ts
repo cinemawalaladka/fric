@@ -437,61 +437,47 @@ export function useClaimForm(initialClaimData?: any) {
         return !!state.claimType;
       case "details": {
         if (state.claimType !== "citation" && state.claimType !== "phd_scholar" && !state.details.workTitle && !state.details.title && !state.details.paperTitle) return false;
-        if (state.details.recognizedBody === "Other Body" && !state.details.otherRecognizedBody) return false;
+        const recBody = state.details.recognizedBody || "Scopus";
+        if (recBody === "Other Body" && !state.details.otherRecognizedBody) return false;
 
-        // Strict mandatory check for Research / Review Paper
+        // Validation for Research / Review Paper
         if (state.claimType === "research_paper") {
           const d = state.details;
           if (!d.journalTitle && !d.journalName) return false;
           if (!d.paperTitle && !d.workTitle && !d.title) return false;
           if (!d.issn || !String(d.issn).trim()) return false;
-          if (!d.recognizedBody || !String(d.recognizedBody).trim()) return false;
-          if (!d.indexing || !String(d.indexing).trim()) return false;
-          if (!d.quartile || !String(d.quartile).trim()) return false;
-          if (d.impactFactor === undefined || d.impactFactor === null || String(d.impactFactor).trim() === "") return false;
-          if (d.acceptanceRate === undefined || d.acceptanceRate === null || String(d.acceptanceRate).trim() === "") return false;
-          if (!d.abdcCategory || !String(d.abdcCategory).trim()) return false;
           if (!d.doi || !String(d.doi).trim()) return false;
           if (!d.publicationDate || !String(d.publicationDate).trim()) return false;
         }
 
-        // Strict mandatory check for Book
+        // Validation for Book
         if (state.claimType === "book") {
           const d = state.details;
           if (!d.paperTitle && !d.workTitle && !d.title) return false;
           if (!d.publisher && !d.publisherName) return false;
           if (!d.isbn || !String(d.isbn).trim()) return false;
-          if (!d.recognizedBody || !String(d.recognizedBody).trim()) return false;
           if (!d.publicationDate && !d.bookPubDate) return false;
-          // If International level is selected, webLink is strictly mandatory
-          if (d.publicationLevel === "International") {
-            if (!d.webLink || !String(d.webLink).trim()) return false;
-          }
         }
 
-        // Strict mandatory check for Book Chapter
+        // Validation for Book Chapter
         if (state.claimType === "book_chapter") {
           const d = state.details;
           if (!d.journalTitle && !d.bookTitle) return false;
           if (!d.paperTitle && !d.chapterTitle && !d.workTitle && !d.title) return false;
           if (!d.isbn || !String(d.isbn).trim()) return false;
-          if (!d.recognizedBody || !String(d.recognizedBody).trim()) return false;
           if (!d.publicationDate && !d.bookPubDate) return false;
-          if (!d.doi || !String(d.doi).trim()) return false;
-          if (!d.webLink || !String(d.webLink).trim()) return false;
         }
 
-        // Strict mandatory check for Patent / IPR
+        // Validation for Patent / IPR
         if (state.claimType === "patent") {
           const d = state.details;
-          if (!d.journalTitle && !d.journalName && !d.patentAuthority) return false;
+          if (!d.journalTitle && !d.journalName && !d.patentAuthority && !d.patentOffice) return false;
           if (!d.paperTitle && !d.workTitle && !d.title) return false;
           if (!d.patentNumber || !String(d.patentNumber).trim()) return false;
           if (!d.country && !d.countryName) return false;
-          if (!d.patentStatus || !String(d.patentStatus).trim()) return false;
         }
 
-        // Strict mandatory check for Citation
+        // Validation for Citation
         if (state.claimType === "citation") {
           const d = state.details;
           if (!d.scopusId || !String(d.scopusId).trim()) return false;
@@ -501,7 +487,7 @@ export function useClaimForm(initialClaimData?: any) {
           if (!d.eligibleCitations && !d.citationCount) return false;
         }
 
-        // Strict mandatory check for Research Project
+        // Validation for Research Project
         if (state.claimType === "research_project") {
           const d = state.details;
           if (!d.title && !d.paperTitle && !d.workTitle) return false;
@@ -510,8 +496,6 @@ export function useClaimForm(initialClaimData?: any) {
           if (!d.sanctionedAmount) return false;
           if (!d.depositedAmount && !d.amountDepositedInPpsu) return false;
           if (!d.depositDate) return false;
-          const depositProofAttached = !!d.depositProofFile || !!d.depositProofName || state.documents.some((doc) => doc.slotId === "ppsu_deposit_proof" && doc.file !== null);
-          if (!depositProofAttached) return false;
         }
 
         // Strict mandatory check for PhD Scholar

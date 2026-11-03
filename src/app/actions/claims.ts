@@ -110,11 +110,13 @@ export async function getMyFacultyProfile() {
 
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
+      const userEmail = (user.email || "").toLowerCase().trim();
       const { data, error } = await adminSupabase
         .from("faculty")
         .select("*, department:departments(*)")
-        .eq("auth_user_id", user.id)
-        .single();
+        .or(`auth_user_id.eq.${user.id},email.eq.${userEmail}`)
+        .limit(1)
+        .maybeSingle();
 
       if (!error && data) return data;
     }
@@ -333,21 +335,34 @@ export async function createClaim(
         if (authErr && !detailErr) detailErr = authErr;
       }
     } else if (claimTypeCode === "PATENT") {
-      const { error } = await adminSupabase.from("patents").insert({
+      const patentStatusUpper = (details.patentStatus || "GRANTED").toUpperCase();
+      const validPatentType = patentStatusUpper === "PUBLISHED" ? "PUBLISHED" : patentStatusUpper === "FILED" ? "FILED" : "GRANTED";
+
+      const basePatentPayload: Record<string, any> = {
         claim_id: claim.id,
         title: details.paperTitle || details.workTitle || details.title || "Patent Title",
         patent_number: details.patentNumber,
         filing_date: details.filingDate || null,
         grant_date: details.grantDate || details.publicationDate || null,
         publication_date: details.publicationDate || details.grantDate || details.filingDate || null,
-        patent_office: details.patentOffice || details.journalTitle || "Indian Patent Office",
-        patent_type: details.patentType || "Utility",
+        patent_office: details.patentOffice || details.patentAuthority || details.journalTitle || "Indian Patent Office",
+        patent_type: validPatentType,
+        inventors: details.inventors || null,
+      };
+
+      const enhancedPatentPayload: Record<string, any> = {
+        ...basePatentPayload,
         patent_status: details.patentStatus || "Granted",
         country: details.country || details.countryName || null,
         publication_level: details.publicationLevel || "National",
-        inventors: details.inventors || null,
-      });
-      detailErr = error;
+      };
+
+      let { error: patErr } = await adminSupabase.from("patents").insert(enhancedPatentPayload);
+      if (patErr && (patErr.code === "PGRST204" || patErr.message?.includes("patent_status") || patErr.message?.includes("country") || patErr.message?.includes("publication_level") || patErr.message?.includes("patents_patent_type_check"))) {
+        const retry = await adminSupabase.from("patents").insert(basePatentPayload);
+        patErr = retry.error;
+      }
+      detailErr = patErr;
     } else if (claimTypeCode === "BOOK" || claimTypeCode === "BOOK_CHAPTER") {
       const bookPayload: Record<string, any> = {
         claim_id: claim.id,
@@ -430,23 +445,39 @@ export async function createClaim(
       }
       detailErr = error;
     } else if (claimTypeCode === "RESEARCH_PROJECT") {
-      const { data: projData, error: projErr } = await adminSupabase
+      const baseProjectPayload = {
+        claim_id: claim.id,
+        title: details.title || details.projectTitle || details.paperTitle || details.workTitle || "Research Project Title",
+        funding_agency: details.sponsoringBody || details.fundingAgency,
+        sanctioned_amount: Number(details.sanctionedAmount || 0),
+        grant_number: details.approvedNumber || details.grantNumber,
+        project_start_date: details.startDate || details.projectStart || null,
+        project_end_date: details.endDate || details.projectEnd || null,
+        project_status: (details.projectStatus === "COMPLETED" ? "COMPLETED" : "ONGOING"),
+      };
+
+      const enhancedProjectPayload = {
+        ...baseProjectPayload,
+        amount_deposited_in_ppsu: details.depositedAmount ? Number(details.depositedAmount) : (details.amountDepositedInPpsu ? Number(details.amountDepositedInPpsu) : null),
+        deposit_date: details.depositDate || null,
+        deposit_proof_url: details.depositProofUrl || details.depositProofName || null,
+      };
+
+      let { data: projData, error: projErr } = await adminSupabase
         .from("research_projects")
-        .insert({
-          claim_id: claim.id,
-          title: details.title || details.projectTitle || details.paperTitle || details.workTitle || "Research Project Title",
-          funding_agency: details.sponsoringBody || details.fundingAgency,
-          sanctioned_amount: Number(details.sanctionedAmount || 0),
-          grant_number: details.approvedNumber || details.grantNumber,
-          project_start_date: details.startDate || details.projectStart || null,
-          project_end_date: details.endDate || details.projectEnd || null,
-          project_status: details.projectStatus || "ONGOING",
-          amount_deposited_in_ppsu: details.depositedAmount ? Number(details.depositedAmount) : (details.amountDepositedInPpsu ? Number(details.amountDepositedInPpsu) : null),
-          deposit_date: details.depositDate || null,
-          deposit_proof_url: details.depositProofUrl || details.depositProofName || null,
-        })
+        .insert(enhancedProjectPayload)
         .select()
         .single();
+
+      if (projErr && (projErr.code === "PGRST204" || projErr.message?.includes("deposit_date") || projErr.message?.includes("amount_deposited_in_ppsu") || projErr.message?.includes("deposit_proof_url"))) {
+        const retry = await adminSupabase
+          .from("research_projects")
+          .insert(baseProjectPayload)
+          .select()
+          .single();
+        projData = retry.data;
+        projErr = retry.error;
+      }
       detailErr = projErr;
 
       // Insert Co-PIs into project_members
@@ -472,14 +503,30 @@ export async function createClaim(
         if (memErr && !detailErr) detailErr = memErr;
       }
     } else if (claimTypeCode === "PHD_SCHOLAR") {
+      const scholarName = details.scholarName || details.scholar_name || "Scholar Name";
+      const scholarId = details.scholarEnrollmentId || details.scholar_enrollment_id || "PENDING";
+      const school = details.school || details.schoolName || details.institution || "PPSU";
+      const department = details.department || details.departmentName || "General";
+      const discipline = details.discipline || details.subject || "Research";
+      const notifDate = details.notificationDate || details.notification_date || null;
+
+      // Safe companion publication record so existing joined queries and resolveClaimTitle show the scholar details immediately
+      await adminSupabase.from("publications").insert({
+        claim_id: claim.id,
+        title: `PhD Scholar: ${scholarName} (${scholarId})`,
+        journal_name: `PhD Guidance - ${school}`,
+        indexing: discipline,
+        publication_date: notifDate || new Date().toISOString().split("T")[0],
+      });
+
       const phdPayload = {
         claim_id: claim.id,
-        scholar_enrollment_id: details.scholarEnrollmentId || details.scholar_enrollment_id || "PENDING",
-        scholar_name: details.scholarName || details.scholar_name || "Scholar Name",
-        school: details.school || details.schoolName || details.institution || "PPSU",
-        department: details.department || details.departmentName || "General",
-        discipline: details.discipline || details.subject || "Research",
-        notification_date: details.notificationDate || details.notification_date || null,
+        scholar_enrollment_id: scholarId,
+        scholar_name: scholarName,
+        school: school,
+        department: department,
+        discipline: discipline,
+        notification_date: notifDate,
       };
 
       try {
@@ -658,20 +705,32 @@ export async function updateClaim(
         await adminSupabase.from("publication_authors").insert(authorEntries);
       }
     } else if (claimTypeCode === "PATENT") {
-      await adminSupabase.from("patents").upsert({
+      const patentStatusUpper = (details.patentStatus || "GRANTED").toUpperCase();
+      const validPatentType = patentStatusUpper === "PUBLISHED" ? "PUBLISHED" : patentStatusUpper === "FILED" ? "FILED" : "GRANTED";
+
+      const basePatentPayload: Record<string, any> = {
         claim_id: claimId,
         title: details.paperTitle || details.workTitle || details.title || "Patent Title",
         patent_number: details.patentNumber,
         filing_date: details.filingDate || null,
         grant_date: details.grantDate || details.publicationDate || null,
         publication_date: details.publicationDate || details.grantDate || details.filingDate || null,
-        patent_office: details.patentOffice || details.journalTitle || "Indian Patent Office",
-        patent_type: details.patentType || "Utility",
+        patent_office: details.patentOffice || details.patentAuthority || details.journalTitle || "Indian Patent Office",
+        patent_type: validPatentType,
+        inventors: details.inventors || null,
+      };
+
+      const enhancedPatentPayload: Record<string, any> = {
+        ...basePatentPayload,
         patent_status: details.patentStatus || "Granted",
         country: details.country || details.countryName || null,
         publication_level: details.publicationLevel || "National",
-        inventors: details.inventors || null,
-      });
+      };
+
+      const { error: patUpsertErr } = await adminSupabase.from("patents").upsert(enhancedPatentPayload, { onConflict: "claim_id" });
+      if (patUpsertErr && (patUpsertErr.code === "PGRST204" || patUpsertErr.message?.includes("patent_status") || patUpsertErr.message?.includes("country") || patUpsertErr.message?.includes("publication_level") || patUpsertErr.message?.includes("patents_patent_type_check"))) {
+        await adminSupabase.from("patents").upsert(basePatentPayload, { onConflict: "claim_id" });
+      }
     } else if (claimTypeCode === "BOOK" || claimTypeCode === "BOOK_CHAPTER") {
       const bookPayload: Record<string, any> = {
         claim_id: claimId,
@@ -750,23 +809,38 @@ export async function updateClaim(
         await adminSupabase.from("citations").upsert(baseCitationPayload);
       }
     } else if (claimTypeCode === "RESEARCH_PROJECT") {
-      const { data: projData } = await adminSupabase
+      const baseProjectPayload = {
+        claim_id: claimId,
+        title: details.title || details.projectTitle || details.paperTitle || details.workTitle || "Research Project Title",
+        funding_agency: details.sponsoringBody || details.fundingAgency,
+        grant_number: details.approvedNumber || details.grantNumber,
+        sanctioned_amount: Number(details.sanctionedAmount || 0),
+        project_start_date: details.startDate || details.projectStart || null,
+        project_end_date: details.endDate || details.projectEnd || null,
+        project_status: (details.projectStatus === "COMPLETED" ? "COMPLETED" : "ONGOING"),
+      };
+
+      const enhancedProjectPayload = {
+        ...baseProjectPayload,
+        amount_deposited_in_ppsu: details.depositedAmount ? Number(details.depositedAmount) : (details.amountDepositedInPpsu ? Number(details.amountDepositedInPpsu) : null),
+        deposit_date: details.depositDate || null,
+        deposit_proof_url: details.depositProofUrl || details.depositProofName || null,
+      };
+
+      let { data: projData, error: projErr } = await adminSupabase
         .from("research_projects")
-        .upsert({
-          claim_id: claimId,
-          title: details.title || details.projectTitle || details.paperTitle || details.workTitle || "Research Project Title",
-          funding_agency: details.sponsoringBody || details.fundingAgency,
-          grant_number: details.approvedNumber || details.grantNumber,
-          sanctioned_amount: Number(details.sanctionedAmount || 0),
-          project_start_date: details.startDate || details.projectStart || null,
-          project_end_date: details.endDate || details.projectEnd || null,
-          project_status: details.projectStatus || "ONGOING",
-          amount_deposited_in_ppsu: details.depositedAmount ? Number(details.depositedAmount) : (details.amountDepositedInPpsu ? Number(details.amountDepositedInPpsu) : null),
-          deposit_date: details.depositDate || null,
-          deposit_proof_url: details.depositProofUrl || details.depositProofName || null,
-        })
+        .upsert(enhancedProjectPayload, { onConflict: "claim_id" })
         .select()
         .single();
+
+      if (projErr && (projErr.code === "PGRST204" || projErr.message?.includes("deposit_date") || projErr.message?.includes("amount_deposited_in_ppsu") || projErr.message?.includes("deposit_proof_url"))) {
+        const retry = await adminSupabase
+          .from("research_projects")
+          .upsert(baseProjectPayload, { onConflict: "claim_id" })
+          .select()
+          .single();
+        projData = retry.data;
+      }
 
       if (projData && Array.isArray(details.coPIs)) {
         await adminSupabase.from("project_members").delete().eq("project_id", projData.id);
@@ -790,14 +864,30 @@ export async function updateClaim(
         await adminSupabase.from("project_members").insert(coPiMembers);
       }
     } else if (claimTypeCode === "PHD_SCHOLAR") {
+      const scholarName = details.scholarName || details.scholar_name || "Scholar Name";
+      const scholarId = details.scholarEnrollmentId || details.scholar_enrollment_id || "PENDING";
+      const school = details.school || details.schoolName || details.institution || "PPSU";
+      const department = details.department || details.departmentName || "General";
+      const discipline = details.discipline || details.subject || "Research";
+      const notifDate = details.notificationDate || details.notification_date || null;
+
+      // Safe companion publication record so existing joined queries and resolveClaimTitle show the scholar details immediately
+      await adminSupabase.from("publications").upsert({
+        claim_id: claimId,
+        title: `PhD Scholar: ${scholarName} (${scholarId})`,
+        journal_name: `PhD Guidance - ${school}`,
+        indexing: discipline,
+        publication_date: notifDate || new Date().toISOString().split("T")[0],
+      }, { onConflict: "claim_id" });
+
       const phdPayload = {
         claim_id: claimId,
-        scholar_enrollment_id: details.scholarEnrollmentId || details.scholar_enrollment_id || "PENDING",
-        scholar_name: details.scholarName || details.scholar_name || "Scholar Name",
-        school: details.school || details.schoolName || details.institution || "PPSU",
-        department: details.department || details.departmentName || "General",
-        discipline: details.discipline || details.subject || "Research",
-        notification_date: details.notificationDate || details.notification_date || null,
+        scholar_enrollment_id: scholarId,
+        scholar_name: scholarName,
+        school: school,
+        department: department,
+        discipline: discipline,
+        notification_date: notifDate,
       };
 
       try {
